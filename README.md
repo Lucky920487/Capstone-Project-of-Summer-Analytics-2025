@@ -119,6 +119,6 @@ This project demonstrates how dynamic pricing can be built, streamed in real tim
 
 - [Pathway Developer Docs]
   (https://pathway.com/developers/user-guide/introduction/welcome/)  
-- [Summer Analytics 2025:Problem Statement] 
+- [Summer Analytics 2025 Problem Statement] 
 - [Bokeh Docs]
   (https://docs.bokeh.org/en/latest/)  
