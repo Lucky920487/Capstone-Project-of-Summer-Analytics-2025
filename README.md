@@ -7,67 +7,116 @@
 
 ---
 
-## 📌 Introduction
+## 1. Introduction
 
-Urban parking lots are high-demand resources that often suffer from inefficiencies due to static pricing. This project addresses that challenge through a dynamic pricing system that adjusts in real-time using simulated streaming data and machine learning logic. We use [Pathway](https://pathway.com/developers/) to simulate real-time input and pricing updates.
-
----
-
-## 📊 Dataset Overview
-
-- **Locations**: 14 parking spaces
-- **Time Span**: 73 days × 18 time intervals/day (8:00 AM to 4:30 PM)
-- **Columns**:
-  - `Latitude`, `Longitude`
-  - `Capacity`, `Occupancy`, `Queue Length`
-  - `Vehicle Type` (car, bike, truck)
-  - `Traffic`, `Special Day Indicator`
-  - `Timestamp` = `Date + Time`
+Urban parking lots are high-demand resources that often suffer from inefficiencies due to static pricing. This project aims to solve that by implementing a dynamic pricing system that adapts in real-time using live data and machine learning logic. The final solution uses Pathway to simulate streaming data and updates parking prices based on demand and competition.
 
 ---
 
-## 🔍 Data Preprocessing
+## 2. Dataset Overview
 
-- Combined `LastUpdatedDate` and `LastUpdatedTime` into a single `timestamp`.
-- Renamed fields to: `lot_id`, `occupancy`, `queue_length`, `vehicle_type`, etc.
-- Exported cleaned data to `cleaned_dataset.csv` for streaming.
+The dataset includes 14 parking spaces observed over 73 days at 18 time points per day (8:00 AM to 4:30 PM). Each record includes:
 
----
-
-## 🤖 Model Implementation
-
-### 🔹 Model 1: Baseline Linear Pricing
-- Formula: `price = price + α × (occupancy / capacity)`
-- α = 2.0, Base price = $10
-- Purpose: Simple benchmark
-
-### 🔹 Model 2: Demand-Based Pricing
-- Factors: Occupancy, Queue, Traffic, Event Day, Vehicle Type
-- Price = `base_price × (1 + λ × demand)`
-- Demand is normalized and weighted
-
-### 🔹 Model 3: Competitive Pricing Model
-- Uses `geopy` to compute distances between lots
-- Adjusts price based on competitor pricing in nearby lots
-- Encourages optimal use and simulates market behavior
+- **Location**: Latitude, Longitude  
+- **Parking Info**: Capacity, Occupancy, Queue Length  
+- **Vehicle Info**: Type of incoming vehicle (car, bike, truck)  
+- **External Info**: Traffic condition, Special day indicator  
+- **Time**: LastUpdatedDate and LastUpdatedTime (combined into `timestamp`)  
 
 ---
 
-## 🚦 Real-Time Streaming with Pathway
+## 3. Data Preprocessing Steps
 
-- `main.py` reads `cleaned_dataset.csv` using `pathway.io.csv.read`
-- Logic wrapped in `@pw.udf`
-- Results streamed and written to `output.jsonl`
-- Schema defined via `pw.Schema`
+- **Combine Date & Time**: Created a `timestamp` column by merging LastUpdatedDate and LastUpdatedTime.  
+- **Rename Columns**: Standardized column names like `lot_id`, `occupancy`, `queue_length`, etc.  
+- **Cleaned CSV**: Saved cleaned data as `cleaned_dataset.csv` for Pathway streaming.  
 
 ---
 
-## 📈 Visualization with Bokeh
+## 4. Model Implementation
 
-- `visualize.py` plots dynamic price over time for each lot
-- Uses `ColumnDataSource.stream()` to simulate live pricing
+### Model 1: Baseline Linear Pricing
 
-To run the dashboard:
-```bash
-bokeh serve visualize.py
+- **Formula**:  
+  `price_t+1 = price_t + α × (occupancy / capacity)`  
+  - Base price = $10  
+  - α = 2.0 (tunable factor)  
+- **Justification**: Provides a simple benchmark by increasing price linearly with occupancy.
 
+---
+
+### Model 2: Demand-Based Pricing
+
+- **Demand Function**:  
+  `demand = α × occ_ratio + β × queue_norm - γ × traffic_norm + δ × is_special_day + ε × vehicle_weight`
+
+- **Vehicle weights**:  
+  - Car = 1.0  
+  - Bike = 0.7  
+  - Truck = 1.5
+
+- **Price Formula**:  
+  `price = base_price × (1 + λ × normalized_demand)`  
+  (clipped between $5 and $20)
+
+- **Justification**: Captures real-world demand factors like traffic, event days, and vehicle type.
+
+---
+
+### Model 3: Competitive Pricing Model
+
+- **Logic**:
+  - Calculates geographical distance between lots using `geopy`
+  - If lot is full and nearby lots are cheaper → lower price or reroute
+  - If nearby lots are expensive → increase price
+
+- **Adjustment**:  
+  `price += adjustment_factor × competitor_signal`
+
+- **Justification**: Encourages business-aware pricing and optimal utilization.
+
+---
+
+## 5. Real-Time Streaming with Pathway
+
+- Used `pathway.io.csv.read()` to stream `cleaned_dataset.csv`
+- Defined schema using `pw.Schema` for structured input
+- Applied pricing logic using `@pw.udf`
+- Emitted output to `output.jsonl` using `pathway.io.jsonlines.write()`
+
+---
+
+## 6. Visualization
+
+- Used **Bokeh** to create a real-time line plot for each parking lot:
+  - **X-axis**: timestamp  
+  - **Y-axis**: price  
+- Real-time simulation with `ColumnDataSource.stream()`
+
+---
+
+## 7. Summary
+
+| Model  | Key Feature             | Output Style        |
+|--------|--------------------------|----------------------|
+| 1      | Linear price vs occupancy | Simple benchmark     |
+| 2      | Multi-variable demand     | Smooth dynamic price |
+| 3      | Competitive geo-pricing   | Smart rerouting      |
+
+This project demonstrates how dynamic pricing can be built, streamed in real time, and visualized effectively using only Python and essential data tools.
+
+---
+
+## 8. Future Work
+
+- Add real-time rerouting suggestions  
+- Improve geo-pricing with distance-weighted logic  
+- Deploy using Pathway’s cloud API  
+
+---
+
+## 9. References
+
+- [Pathway Developer Docs](https://pathway.com/developers/)  
+- [Summer Analytics 2025 Problem Statement](#)  
+- [Bokeh Docs](https://docs.bokeh.org/)  
